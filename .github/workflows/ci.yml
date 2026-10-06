@@ -1,0 +1,43 @@
+name: DevOps Automation CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Validate Project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify project files
+        run: |
+          test -f index.html
+          test -f Dockerfile
+          echo "Project files verified successfully."
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t devops-automation-lab:${{ github.sha }} .
+
+      - name: Confirm Docker image
+        run: |
+          docker image inspect devops-automation-lab:${{ github.sha }}
+          echo "Docker image built successfully."
