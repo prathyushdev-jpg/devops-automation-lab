@@ -9,14 +9,17 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Validate Project
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Verify project files
         run: |
@@ -26,12 +29,12 @@ jobs:
 
   docker-build:
     name: Build Docker Image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: validate
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build Docker image
         run: |
@@ -41,3 +44,22 @@ jobs:
         run: |
           docker image inspect devops-automation-lab:${{ github.sha }}
           echo "Docker image built successfully."
+
+      - name: Run application container
+        run: |
+          docker run -d \
+            --name devops-web-test \
+            -p 8080:80 \
+            devops-automation-lab:${{ github.sha }}
+
+      - name: Application smoke test
+        run: |
+          sleep 3
+          curl --fail http://localhost:8080
+          echo "Application smoke test passed."
+
+      - name: Stop test container
+        if: always()
+        run: |
+          docker stop devops-web-test || true
+          docker rm devops-web-test || true
